@@ -1,0 +1,60 @@
+# PlexWarp 配置文件示例
+
+# 服务器配置
+port: 8080
+host: "0.0.0.0"
+
+# Plex服务器配置
+plex_server:
+  addr: "http://localhost:32400"  # Plex服务器地址
+  auth: ""                        # Plex Token (可选)
+
+# 日志配置
+logger:
+  access_logger:
+    console: true  # 是否输出到控制台
+    file: true     # 是否输出到文件
+  service_logger:
+    console: true
+    file: true
+
+# Web前端配置
+web:
+  enable: true              # 启用Web前端
+  custom: false             # 启用自定义静态资源
+  index: false              # 使用自定义首页
+  head: ""                  # 自定义HEAD内容
+  external_player_url: false # 外置播放器
+  crx: false                # CRX美化
+  actor_plus: false         # 演员过滤
+  fanart_show: false        # 显示同人图
+  danmaku: false            # Web弹幕
+  video_together: false     # VideoTogether
+
+# 客户端过滤配置
+client_filter:
+  enable: false
+  mode: "allow"  # allow 或 deny
+  client_list:
+    - "Plex"
+    - "PlexAmp"
+
+# HTTP Strm配置
+http_strm:
+  enable: false
+  trans_code: true
+  final_url: false
+  prefix_list: []
+
+# Alist Strm配置
+alist_strm:
+  enable: false
+  trans_code: true
+  raw_url: false
+
+# 字幕配置
+subtitle:
+  enable: false
+  srt2ass: false
+  ass_style: []
+  sub_set: false
