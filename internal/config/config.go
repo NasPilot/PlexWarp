@@ -40,6 +40,15 @@ var (
 
 	// 字幕配置
 	Subtitle SubtitleSetting
+
+	// Strm302重定向配置
+	Strm302 Strm302Setting
+
+	// Alist配置
+	Alist AlistConfig
+
+	// 重定向配置
+	Redirect RedirectConfig
 )
 
 // Init 初始化配置
@@ -147,6 +156,52 @@ func loadConfig() error {
 	Subtitle.ASSStyle = viper.GetStringSlice("subtitle.ass_style")
 	Subtitle.SubSet = viper.GetBool("subtitle.sub_set")
 
+	// Strm302重定向配置
+	Strm302.Enable = viper.GetBool("strm302.enable")
+	Strm302.MediaMountPath = viper.GetStringSlice("strm302.media_mount_path")
+	Strm302.TranscodeEnable = viper.GetBool("strm302.transcode_enable")
+	Strm302.FallbackOriginal = viper.GetBool("strm302.fallback_original")
+
+	// Alist配置
+	Alist.Addr = viper.GetString("alist.addr")
+	Alist.Token = viper.GetString("alist.token")
+	Alist.SignEnable = viper.GetBool("alist.sign_enable")
+	Alist.SignExpireTime = viper.GetInt("alist.sign_expire_time")
+	Alist.PublicAddr = viper.GetString("alist.public_addr")
+	Alist.RawUrlMapping = viper.GetStringMapString("alist.raw_url_mapping")
+
+	// 重定向配置
+	Redirect.Enable = viper.GetBool("redirect.enable")
+	Redirect.CheckEnable = viper.GetBool("redirect.check_enable")
+
+	// 加载路径映射规则
+	mediaPathMappingData := viper.Get("redirect.media_path_mapping")
+	if mappingSlice, ok := mediaPathMappingData.([]interface{}); ok {
+		for _, item := range mappingSlice {
+			if mapping, ok := item.(map[string]interface{}); ok {
+				rule := PathMappingRule{
+					From: mapping["from"].(string),
+					To:   mapping["to"].(string),
+				}
+				Redirect.MediaPathMapping = append(Redirect.MediaPathMapping, rule)
+			}
+		}
+	}
+
+	// 加载软链接规则
+	symlinkRulesData := viper.Get("redirect.symlink_rules")
+	if rulesSlice, ok := symlinkRulesData.([]interface{}); ok {
+		for _, item := range rulesSlice {
+			if rule, ok := item.(map[string]interface{}); ok {
+				symlinkRule := SymlinkRule{
+					Path:   rule["path"].(string),
+					Target: rule["target"].(string),
+				}
+				Redirect.SymlinkRules = append(Redirect.SymlinkRules, symlinkRule)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -198,6 +253,26 @@ func setDefaults() {
 	viper.SetDefault("subtitle.srt2ass", false)
 	viper.SetDefault("subtitle.ass_style", []string{})
 	viper.SetDefault("subtitle.sub_set", false)
+
+	// Strm302重定向默认配置
+	viper.SetDefault("strm302.enable", false)
+	viper.SetDefault("strm302.media_mount_path", []string{"/mnt"})
+	viper.SetDefault("strm302.transcode_enable", true)
+	viper.SetDefault("strm302.fallback_original", true)
+
+	// Alist默认配置
+	viper.SetDefault("alist.addr", "")
+	viper.SetDefault("alist.token", "")
+	viper.SetDefault("alist.sign_enable", false)
+	viper.SetDefault("alist.sign_expire_time", 3600)
+	viper.SetDefault("alist.public_addr", "")
+	viper.SetDefault("alist.raw_url_mapping", map[string]string{})
+
+	// 重定向默认配置
+	viper.SetDefault("redirect.enable", false)
+	viper.SetDefault("redirect.check_enable", false)
+	viper.SetDefault("redirect.media_path_mapping", []map[string]string{})
+	viper.SetDefault("redirect.symlink_rules", []map[string]string{})
 }
 
 // createDir 创建目录

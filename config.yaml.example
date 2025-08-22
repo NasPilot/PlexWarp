@@ -58,3 +58,31 @@ subtitle:
   srt2ass: false
   ass_style: []
   sub_set: false
+
+# Strm302重定向配置
+strm302:
+  enable: false                    # 启用302重定向功能
+  media_mount_path:               # 媒体挂载路径列表
+    - "/mnt"
+  transcode_enable: true          # 是否允许转码
+  fallback_original: true         # 失败时是否回退到原始链接
+
+# Alist配置
+alist:
+  addr: ""                        # Alist服务器地址，如: http://localhost:5244
+  token: ""                       # Alist访问令牌
+  sign_enable: false              # 是否启用签名
+  sign_expire_time: 3600          # 签名过期时间(秒)
+  public_addr: ""                 # Alist公网地址
+  raw_url_mapping: {}             # 原始URL映射
+
+# 重定向配置
+redirect:
+  enable: false                   # 启用重定向
+  check_enable: false             # 启用重定向检查
+  media_path_mapping: []          # 媒体路径映射规则
+    # - from: "/mnt/media"
+    #   to: "/alist/media"
+  symlink_rules: []               # 软链接规则
+    # - path: "/mnt/symlink"
+    #   target: "/real/path"
