@@ -1,7 +1,19 @@
+version: 2
+
 project_name: PlexWarp
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-PreRelease-{{ .ShortCommit }}"
+
+release:
+  name_template: "{{ .Tag }}"
+before:
+  hooks:
+    - go mod download
 
 builds:
   - env:
+      - GOPROXY=https://goproxy.io,direct
       - CGO_ENABLED=0
     goos:
       - linux
@@ -12,64 +24,41 @@ builds:
       - arm
       - arm64
     goarm:
-      - "6"
-      - "7"
+      - 5
+      - 6
+      - 7
     ignore:
       - goos: windows
-        goarch: arm
+        goarm: 5
       - goos: windows
-        goarch: arm64
-    mod_timestamp: '{{ .CommitTimestamp }}'
-    flags:
-      - -trimpath
+        goarm: 6
+      - goos: windows
+        goarm: 7
+    binary: "{{ .ProjectName }}"
     ldflags:
-      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
-    binary: plexwarp
+      - -s -w
+      - -X PlexWarp/internal/config.appVersion={{ .Version }}
+      - -X PlexWarp/internal/config.commitHash={{ .FullCommit }}
+      - -X PlexWarp/internal/config.buildDate={{ .Date}}
 
 archives:
   - format: tar.gz
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{- .Os }}_{{ .Arch }}{{- if .Arm}}v{{ .Arm }}{{- end}}"
+    # 对于 Windows 存档使用 zip 格式
     format_overrides:
       - goos: windows
         format: zip
     files:
-      - LICENSE
-      - README.md
-      - config.yaml.example
-
-checksum:
-  name_template: 'checksums.txt'
-
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+      - src: LICENSE
+      - src: README.md
+      - src: config.yaml.example
+        dst: config.yaml.example
 
 changelog:
   sort: asc
   filters:
     exclude:
-      - '^docs:'
-      - '^test:'
-      - '^ci:'
-      - '^build:'
-      - '^style:'
-      - '^refactor:'
-      - '^perf:'
-      - '^chore:'
-      - Merge pull request
-      - Merge branch
-      - go mod tidy
-  groups:
-    - title: Features
-      regexp: '^.*?feat(\(.+\))??!?:.+$'
-      order: 0
-    - title: 'Bug fixes'
-      regexp: '^.*?fix(\(.+\))??!?:.+$'
-      order: 1
-    - title: Others
-      order: 999
+      - "^docs:"
+      - "^test:"
+      - "^build:"
+      - "^release:"
