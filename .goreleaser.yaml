@@ -43,7 +43,7 @@ builds:
 
 archives:
   - format: tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{- .Os }}_{{ .Arch }}{{- if .Arm}}v{{ .Arm }}{{- end}}"
+    name_template: "{{ .ProjectName }}_{{ .Os | title }}_{{ .Arch }}{{- if .Arm}}v{{ .Arm }}{{- end}}"
     # 对于 Windows 存档使用 zip 格式
     format_overrides:
       - goos: windows
