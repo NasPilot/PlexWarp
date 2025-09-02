@@ -69,7 +69,7 @@ func ClientFilter() gin.HandlerFunc {
 		}
 
 		isAllowed := false
-		for _, client := range config.ClientFilter.ClientList {
+		for _, client := range config.ClientFilter.Clients {
 			if strings.Contains(strings.ToLower(userAgent), strings.ToLower(client)) {
 				isAllowed = true
 				break

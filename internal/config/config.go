@@ -26,29 +26,20 @@ var (
 	// 日志配置
 	Logger LoggerSetting
 
-	// Web配置
-	Web WebSetting
-
 	// 客户端过滤配置
 	ClientFilter ClientFilterSetting
 
-	// HTTPStrm配置
-	HTTPStrm HTTPStrmSetting
+	// Plex302重定向配置
+	Plex302 Plex302Setting
 
-	// AlistStrm配置
-	AlistStrm AlistStrmSetting
+	// 路径映射配置
+	PathMapping PathMappingConfig
 
-	// 字幕配置
-	Subtitle SubtitleSetting
+	// 软链接配置
+	Symlink SymlinkConfig
 
-	// Strm302重定向配置
-	Strm302 Strm302Setting
-
-	// Alist配置
-	Alist AlistConfig
-
-	// 重定向配置
-	Redirect RedirectConfig
+	// STRM重定向配置
+	StrmRedirect StrmRedirectConfig
 )
 
 // Init 初始化配置
@@ -112,7 +103,6 @@ func loadConfig() error {
 	Host = viper.GetString("host")
 
 	// Plex服务器配置
-	PlexServer.Type = constants.PlexServerTypePlex
 	PlexServer.ADDR = viper.GetString("plex_server.addr")
 	PlexServer.AUTH = viper.GetString("plex_server.auth")
 
@@ -122,74 +112,34 @@ func loadConfig() error {
 	Logger.ServiceLogger.Console = viper.GetBool("logger.service_logger.console")
 	Logger.ServiceLogger.File = viper.GetBool("logger.service_logger.file")
 
-	// Web配置
-	Web.Enable = viper.GetBool("web.enable")
-	Web.Custom = viper.GetBool("web.custom")
-	Web.Index = viper.GetBool("web.index")
-	Web.Head = viper.GetString("web.head")
-	Web.ExternalPlayerUrl = viper.GetBool("web.external_player_url")
-	Web.Crx = viper.GetBool("web.crx")
-	Web.ActorPlus = viper.GetBool("web.actor_plus")
-	Web.FanartShow = viper.GetBool("web.fanart_show")
-	Web.Danmaku = viper.GetBool("web.danmaku")
-	Web.VideoTogether = viper.GetBool("web.video_together")
-
 	// 客户端过滤配置
 	ClientFilter.Enable = viper.GetBool("client_filter.enable")
-	ClientFilter.Mode = constants.FilterMode(viper.GetString("client_filter.mode"))
-	ClientFilter.ClientList = viper.GetStringSlice("client_filter.client_list")
+	ClientFilter.Mode = viper.GetString("client_filter.mode")
+	ClientFilter.Clients = viper.GetStringSlice("client_filter.client_list")
 
-	// HTTPStrm配置
-	HTTPStrm.Enable = viper.GetBool("http_strm.enable")
-	HTTPStrm.TransCode = viper.GetBool("http_strm.trans_code")
-	HTTPStrm.FinalURL = viper.GetBool("http_strm.final_url")
-	HTTPStrm.PrefixList = viper.GetStringSlice("http_strm.prefix_list")
-
-	// AlistStrm配置
-	AlistStrm.Enable = viper.GetBool("alist_strm.enable")
-	AlistStrm.TransCode = viper.GetBool("alist_strm.trans_code")
-	AlistStrm.RawURL = viper.GetBool("alist_strm.raw_url")
-
-	// 字幕配置
-	Subtitle.Enable = viper.GetBool("subtitle.enable")
-	Subtitle.SRT2ASS = viper.GetBool("subtitle.srt2ass")
-	Subtitle.ASSStyle = viper.GetStringSlice("subtitle.ass_style")
-	Subtitle.SubSet = viper.GetBool("subtitle.sub_set")
-
-	// Strm302重定向配置
-	Strm302.Enable = viper.GetBool("strm302.enable")
-	Strm302.MediaMountPath = viper.GetStringSlice("strm302.media_mount_path")
-	Strm302.TranscodeEnable = viper.GetBool("strm302.transcode_enable")
-	Strm302.FallbackOriginal = viper.GetBool("strm302.fallback_original")
-
-	// Alist配置
-	Alist.Addr = viper.GetString("alist.addr")
-	Alist.Token = viper.GetString("alist.token")
-	Alist.SignEnable = viper.GetBool("alist.sign_enable")
-	Alist.SignExpireTime = viper.GetInt("alist.sign_expire_time")
-	Alist.PublicAddr = viper.GetString("alist.public_addr")
-	Alist.RawUrlMapping = viper.GetStringMapString("alist.raw_url_mapping")
-
-	// 重定向配置
-	Redirect.Enable = viper.GetBool("redirect.enable")
-	Redirect.CheckEnable = viper.GetBool("redirect.check_enable")
+	// Plex302重定向配置
+	Plex302.Enable = viper.GetBool("plex302.enable")
+	Plex302.MediaMountPaths = viper.GetStringSlice("plex302.media_mount_paths")
+	Plex302.TranscodeEnable = viper.GetBool("plex302.transcode_enable")
+	Plex302.FallbackOriginal = viper.GetBool("plex302.fallback_original")
+	Plex302.CheckLinkValidity = viper.GetBool("plex302.check_link_validity")
 
 	// 加载路径映射规则
-	mediaPathMappingData := viper.Get("redirect.media_path_mapping")
-	if mappingSlice, ok := mediaPathMappingData.([]interface{}); ok {
+	pathMappingData := viper.Get("path_mapping.rules")
+	if mappingSlice, ok := pathMappingData.([]interface{}); ok {
 		for _, item := range mappingSlice {
 			if mapping, ok := item.(map[string]interface{}); ok {
 				rule := PathMappingRule{
 					From: mapping["from"].(string),
 					To:   mapping["to"].(string),
 				}
-				Redirect.MediaPathMapping = append(Redirect.MediaPathMapping, rule)
+				PathMapping.Rules = append(PathMapping.Rules, rule)
 			}
 		}
 	}
 
 	// 加载软链接规则
-	symlinkRulesData := viper.Get("redirect.symlink_rules")
+	symlinkRulesData := viper.Get("symlink.rules")
 	if rulesSlice, ok := symlinkRulesData.([]interface{}); ok {
 		for _, item := range rulesSlice {
 			if rule, ok := item.(map[string]interface{}); ok {
@@ -197,7 +147,22 @@ func loadConfig() error {
 					Path:   rule["path"].(string),
 					Target: rule["target"].(string),
 				}
-				Redirect.SymlinkRules = append(Redirect.SymlinkRules, symlinkRule)
+				Symlink.Rules = append(Symlink.Rules, symlinkRule)
+			}
+		}
+	}
+
+	// 加载STRM重定向规则
+	strmRedirectData := viper.Get("strm_redirect.last_link_rules")
+	if rulesSlice, ok := strmRedirectData.([]interface{}); ok {
+		for _, item := range rulesSlice {
+			if rule, ok := item.(map[string]interface{}); ok {
+				strmRule := StrmRedirectRule{
+					MatchType: rule["match_type"].(string),
+					Patterns:  rule["patterns"].([]string),
+					Action:    rule["action"].(string),
+				}
+				StrmRedirect.LastLinkRules = append(StrmRedirect.LastLinkRules, strmRule)
 			}
 		}
 	}
@@ -220,59 +185,26 @@ func setDefaults() {
 	viper.SetDefault("logger.service_logger.console", true)
 	viper.SetDefault("logger.service_logger.file", true)
 
-	// Web默认配置
-	viper.SetDefault("web.enable", true)
-	viper.SetDefault("web.custom", false)
-	viper.SetDefault("web.index", false)
-	viper.SetDefault("web.head", "")
-	viper.SetDefault("web.external_player_url", false)
-	viper.SetDefault("web.crx", false)
-	viper.SetDefault("web.actor_plus", false)
-	viper.SetDefault("web.fanart_show", false)
-	viper.SetDefault("web.danmaku", false)
-	viper.SetDefault("web.video_together", false)
-
 	// 客户端过滤默认配置
 	viper.SetDefault("client_filter.enable", false)
 	viper.SetDefault("client_filter.mode", "allow")
 	viper.SetDefault("client_filter.client_list", []string{})
 
-	// HTTPStrm默认配置
-	viper.SetDefault("http_strm.enable", false)
-	viper.SetDefault("http_strm.trans_code", true)
-	viper.SetDefault("http_strm.final_url", false)
-	viper.SetDefault("http_strm.prefix_list", []string{})
+	// Plex302重定向默认配置
+	viper.SetDefault("plex302.enable", false)
+	viper.SetDefault("plex302.media_mount_paths", []string{"/mnt"})
+	viper.SetDefault("plex302.transcode_enable", true)
+	viper.SetDefault("plex302.fallback_original", true)
+	viper.SetDefault("plex302.check_link_validity", false)
 
-	// AlistStrm默认配置
-	viper.SetDefault("alist_strm.enable", false)
-	viper.SetDefault("alist_strm.trans_code", true)
-	viper.SetDefault("alist_strm.raw_url", false)
+	// 路径映射默认配置
+	viper.SetDefault("path_mapping.rules", []map[string]string{})
 
-	// 字幕默认配置
-	viper.SetDefault("subtitle.enable", false)
-	viper.SetDefault("subtitle.srt2ass", false)
-	viper.SetDefault("subtitle.ass_style", []string{})
-	viper.SetDefault("subtitle.sub_set", false)
+	// 软链接默认配置
+	viper.SetDefault("symlink.rules", []map[string]string{})
 
-	// Strm302重定向默认配置
-	viper.SetDefault("strm302.enable", false)
-	viper.SetDefault("strm302.media_mount_path", []string{"/mnt"})
-	viper.SetDefault("strm302.transcode_enable", true)
-	viper.SetDefault("strm302.fallback_original", true)
-
-	// Alist默认配置
-	viper.SetDefault("alist.addr", "")
-	viper.SetDefault("alist.token", "")
-	viper.SetDefault("alist.sign_enable", false)
-	viper.SetDefault("alist.sign_expire_time", 3600)
-	viper.SetDefault("alist.public_addr", "")
-	viper.SetDefault("alist.raw_url_mapping", map[string]string{})
-
-	// 重定向默认配置
-	viper.SetDefault("redirect.enable", false)
-	viper.SetDefault("redirect.check_enable", false)
-	viper.SetDefault("redirect.media_path_mapping", []map[string]string{})
-	viper.SetDefault("redirect.symlink_rules", []map[string]string{})
+	// STRM重定向默认配置
+	viper.SetDefault("strm_redirect.rules", []map[string]string{})
 }
 
 // createDir 创建目录

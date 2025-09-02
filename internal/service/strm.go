@@ -12,14 +12,11 @@ import (
 
 // StrmService strm文件处理服务
 type StrmService struct {
-	alistService *AlistService
 }
 
 // NewStrmService 创建strm服务
 func NewStrmService() *StrmService {
-	return &StrmService{
-		alistService: NewAlistService(),
-	}
+	return &StrmService{}
 }
 
 // IsStrmFile 判断是否为strm文件
@@ -66,19 +63,9 @@ func (s *StrmService) GetDirectLinkFromStrm(strmPath string) (string, error) {
 		return content, nil
 	}
 
-	// 如果是本地路径，尝试通过Alist获取直链
+	// 对于本地路径，当前版本不支持，返回错误
 	if strings.HasPrefix(content, "/") {
-		// 转换为Alist路径
-		alistPath := s.alistService.ConvertPathToAlist(content)
-		
-		// 从Alist获取直链
-		directLink, err := s.alistService.GetDirectLink(alistPath)
-		if err != nil {
-			log.Printf("Failed to get direct link from Alist: %v", err)
-			return "", err
-		}
-		
-		return directLink, nil
+		return "", fmt.Errorf("local path not supported in current version: %s", content)
 	}
 
 	return "", fmt.Errorf("unsupported strm content format: %s", content)
@@ -87,7 +74,7 @@ func (s *StrmService) GetDirectLinkFromStrm(strmPath string) (string, error) {
 // applyPathMapping 应用路径映射规则
 func (s *StrmService) applyPathMapping(path string) string {
 	// 首先检查软链接规则
-	for _, rule := range config.Redirect.SymlinkRules {
+	for _, rule := range config.Symlink.Rules {
 		if strings.HasPrefix(path, rule.Path) {
 			mappedPath := strings.Replace(path, rule.Path, rule.Target, 1)
 			log.Printf("Applied symlink rule: %s -> %s", path, mappedPath)
@@ -96,7 +83,7 @@ func (s *StrmService) applyPathMapping(path string) string {
 	}
 
 	// 然后应用媒体路径映射规则
-	for _, rule := range config.Redirect.MediaPathMapping {
+	for _, rule := range config.PathMapping.Rules {
 		if strings.HasPrefix(path, rule.From) {
 			mappedPath := strings.Replace(path, rule.From, rule.To, 1)
 			log.Printf("Applied path mapping: %s -> %s", path, mappedPath)
@@ -109,7 +96,7 @@ func (s *StrmService) applyPathMapping(path string) string {
 
 // IsMediaPath 判断路径是否在媒体挂载路径中
 func (s *StrmService) IsMediaPath(path string) bool {
-	for _, mountPath := range config.Strm302.MediaMountPath {
+	for _, mountPath := range config.Plex302.MediaMountPaths {
 		if strings.HasPrefix(path, mountPath) {
 			return true
 		}
@@ -120,7 +107,7 @@ func (s *StrmService) IsMediaPath(path string) bool {
 // ShouldRedirect 判断是否应该进行302重定向
 func (s *StrmService) ShouldRedirect(path string, userAgent string) bool {
 	// 检查功能是否启用
-	if !config.Strm302.Enable {
+	if !config.Plex302.Enable {
 		return false
 	}
 
@@ -135,7 +122,7 @@ func (s *StrmService) ShouldRedirect(path string, userAgent string) bool {
 	}
 
 	// 检查是否为转码请求（如果禁用转码重定向）
-	if !config.Strm302.TranscodeEnable && s.isTranscodeRequest(path) {
+	if !config.Plex302.TranscodeEnable && s.isTranscodeRequest(path) {
 		return false
 	}
 
@@ -170,7 +157,7 @@ func (s *StrmService) HandleRedirect(w http.ResponseWriter, r *http.Request, str
 		log.Printf("Failed to get direct link for strm: %v", err)
 		
 		// 如果启用了回退到原始链接
-		if config.Strm302.FallbackOriginal {
+		if config.Plex302.FallbackOriginal {
 			log.Printf("Falling back to original request")
 			return fmt.Errorf("fallback to original")
 		}
@@ -187,19 +174,12 @@ func (s *StrmService) HandleRedirect(w http.ResponseWriter, r *http.Request, str
 
 // CheckStrmHealth 检查strm相关服务健康状态
 func (s *StrmService) CheckStrmHealth() error {
-	if !config.Strm302.Enable {
+	if !config.Plex302.Enable {
 		return nil // 功能未启用，跳过检查
 	}
 
-	// 检查Alist连接
-	if config.Alist.Addr != "" {
-		if err := s.alistService.CheckConnection(); err != nil {
-			return fmt.Errorf("alist connection failed: %v", err)
-		}
-	}
-
 	// 检查媒体挂载路径
-	for _, mountPath := range config.Strm302.MediaMountPath {
+	for _, mountPath := range config.Plex302.MediaMountPaths {
 		if _, err := os.Stat(mountPath); os.IsNotExist(err) {
 			log.Printf("Warning: media mount path does not exist: %s", mountPath)
 		}

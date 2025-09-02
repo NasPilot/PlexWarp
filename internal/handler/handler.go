@@ -115,8 +115,8 @@ func shouldHandleStrmRedirect(r *http.Request) bool {
 
 // handleStrmRedirect 处理strm重定向
 func handleStrmRedirect(w http.ResponseWriter, r *http.Request) bool {
-	// 检查strm302功能是否启用
-	if !config.Strm302.Enable {
+	// 检查plex302功能是否启用
+	if !config.Plex302.Enable {
 		return false
 	}
 
